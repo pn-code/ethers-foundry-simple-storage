@@ -11,6 +11,8 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 // An immutable var should be named with i_ preceding it
 // 3. Write error & use if statement instead of require()
 // 4. When naming errors, put contract name followed by double underscore then error name
+// 5. Storage var should start with s_
+// 6. Private var are more gas efficient than public ones
 
 error FundMe__NotOwner();
 
@@ -18,8 +20,8 @@ contract FundMe {
     using PriceConverter for uint256;
 
     // Array of funders
-    address[] public funders;
-    mapping(address funder => uint256 amountFunded) public addressToAmountFunded;
+    address[] private s_funders;
+    mapping(address funder => uint256 amountFunded) private s_addressToAmountFunded;
 
     // Address of contract's owner
     address public immutable i_owner;
@@ -34,19 +36,19 @@ contract FundMe {
 
     function fund() public payable {
         require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "Didn't send enough ETH.");
-        funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] += msg.value;
+        s_funders.push(msg.sender);
+        s_addressToAmountFunded[msg.sender] += msg.value;
     }
 
     // For Loop Implementation
     function withdraw() public onlyOwner {
-        for (uint256 funderIndex = 0; funderIndex < funders.length; funderIndex++) {
-            address funder = funders[funderIndex];
-            addressToAmountFunded[funder] = 0;
+        for (uint256 funderIndex = 0; funderIndex < s_funders.length; funderIndex++) {
+            address funder = s_funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
         }
 
         // Reset the array
-        funders = new address[](0);
+        s_funders = new address[](0);
 
         // Withdraw the funds (call is the best practice way of sending eth)
         // msg.sender = type address
@@ -90,5 +92,16 @@ contract FundMe {
     // fallback()
     fallback() external payable {
         fund();
+    }
+    /**
+     * View / Pure functions (Getters)
+     */
+
+    function getAddressToAmountFunded(address fundingAddress) external view returns (uint256) {
+        return s_addressToAmountFunded[fundingAddress];
+    }
+
+    function getFunder(uint256 index) external view returns (address) {
+        return s_funders[index];
     }
 }
