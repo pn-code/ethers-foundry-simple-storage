@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {Test, console} from "@forge-std/src/Test.sol";
 import {FundMe} from "../src/FundMe.sol";
+import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     // Initiate var
@@ -10,7 +11,8 @@ contract FundMeTest is Test {
 
     // Provide value to var
     function setUp() external {
-        fundMe = new FundMe();
+        DeployFundMe deployedFundMe = new DeployFundMe();
+        fundMe = deployedFundMe.run();
     }
 
     // Check minimum USD
@@ -22,6 +24,7 @@ contract FundMeTest is Test {
     function testOwnerIsSender() public {
         // Because we asked FundMeTest to deploy FundMe contract, FundMe is the owner
         // So address(this) should be the owner's address
-        assertEq(fundMe.i_owner(), address(this));
+        // But if tested with vm.startBroadcast deploy script, then owner is msg.sender
+        assertEq(fundMe.i_owner(), msg.sender);
     }
 }

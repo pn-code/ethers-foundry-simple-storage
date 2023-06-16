@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { PriceConverter } from "./PriceConverter.sol";
+import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 // Advanced Solidity Tips
 // 1. If you assign a var once and it never changes, use constant
@@ -15,7 +16,6 @@ error FundMe__NotOwner();
 
 contract FundMe {
     using PriceConverter for uint256;
-    uint256 public constant MINIMUM_USD = 5e18;
     
     // Array of funders
     address[] public funders;
@@ -23,14 +23,17 @@ contract FundMe {
 
     // Address of contract's owner
     address public immutable i_owner;
+    uint256 public constant MINIMUM_USD = 5e18;
+    AggregatorV3Interface private s_priceFeed;
 
     // Function that is immediately called when contract is deployed
-    constructor() {
+    constructor(address priceFeed) {
         i_owner = msg.sender;
+        s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
     function fund() public payable {     
-        require(msg.value.getConversionRate() >= MINIMUM_USD, "Didn't send enough ETH.");
+        require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "Didn't send enough ETH.");
         funders.push(msg.sender);
         addressToAmountFunded[msg.sender] += msg.value;
     }
