@@ -27,4 +27,9 @@ contract FundMeTest is Test {
         // But if tested with vm.startBroadcast deploy script, then owner is msg.sender
         assertEq(fundMe.i_owner(), msg.sender);
     }
+
+    // Checks price feed version
+    function testPriceFeedVersionIsAccurate() public {
+        assertEq(fundMe.getVersion(), 4);
+    }
 }
