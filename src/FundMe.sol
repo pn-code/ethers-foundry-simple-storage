@@ -63,6 +63,14 @@ contract FundMe {
         require(callSuccess, "Call failed.");
     }
 
+    function getVersion() public view returns (uint256) {
+        return s_priceFeed.version();
+    }
+
+    function getPriceFeed() public view returns (AggregatorV3Interface) {
+        return s_priceFeed;
+    }
+
     modifier onlyOwner() {
         // require(msg.sender == i_owner, "Must be owner!");
         if (msg.sender == i_owner) {
