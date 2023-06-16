@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import { PriceConverter } from "./PriceConverter.sol";
-import { AggregatorV3Interface } from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {PriceConverter} from "./PriceConverter.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 // Advanced Solidity Tips
 // 1. If you assign a var once and it never changes, use constant
@@ -16,7 +16,7 @@ error FundMe__NotOwner();
 
 contract FundMe {
     using PriceConverter for uint256;
-    
+
     // Array of funders
     address[] public funders;
     mapping(address funder => uint256 amountFunded) public addressToAmountFunded;
@@ -32,7 +32,7 @@ contract FundMe {
         s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 
-    function fund() public payable {     
+    function fund() public payable {
         require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "Didn't send enough ETH.");
         funders.push(msg.sender);
         addressToAmountFunded[msg.sender] += msg.value;
@@ -43,7 +43,7 @@ contract FundMe {
         for (uint256 funderIndex = 0; funderIndex < funders.length; funderIndex++) {
             address funder = funders[funderIndex];
             addressToAmountFunded[funder] = 0;
-        } 
+        }
 
         // Reset the array
         funders = new address[](0);
@@ -59,7 +59,7 @@ contract FundMe {
         // bool sendSuccess = payable(msg.sender).send(address(this).balance);
         // require(sendSuccess, "Send failed.");
 
-        (bool callSuccess, ) = payable(msg.sender).call{value: address(this).balance}("");
+        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
         require(callSuccess, "Call failed.");
     }
 
