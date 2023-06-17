@@ -7,12 +7,19 @@ import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     // Initiate var
-    FundMe fundMe;
+    FundMe public fundMe;
+
+    address public constant USER = address(1);
+
+    uint256 constant SEND_AMOUNT = 0.1 ether;
+    uint256 constant STARTING_BALANCE = 10 ether;
+    uint256 public constant GAS_PRICE = 1;
 
     // Provide value to var
     function setUp() external {
         DeployFundMe deployedFundMe = new DeployFundMe();
         fundMe = deployedFundMe.run();
+        vm.deal(USER, STARTING_BALANCE);
     }
 
     // Check minimum USD
@@ -31,5 +38,27 @@ contract FundMeTest is Test {
     // Checks price feed version
     function testPriceFeedVersionIsAccurate() public {
         assertEq(fundMe.getVersion(), 4);
+    }
+
+    // fund function should fail if not enough ETH
+    function testFundFailsWithoutEnoughETH() public {
+        vm.expectRevert();
+        fundMe.fund();
+    }
+
+    // fund function should pass if enough ETH is passed to it
+    function testFundUpdatesFundedDataStructure() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_AMOUNT}();
+        uint256 amountFunded = fundMe.getAddressToAmountFunded(USER);
+        assertEq(amountFunded, SEND_AMOUNT);
+    }
+
+    function testAddsFunderToArrayOfFunders() public {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_AMOUNT}();
+
+        address funder = fundMe.getFunder(0);
+        assertEq(funder, USER);
     }
 }
