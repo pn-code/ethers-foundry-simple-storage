@@ -25,7 +25,7 @@ contract FundMeTest is Test {
         // Because we asked FundMeTest to deploy FundMe contract, FundMe is the owner
         // So address(this) should be the owner's address
         // But if tested with vm.startBroadcast deploy script, then owner is msg.sender
-        assertEq(fundMe.i_owner(), msg.sender);
+        assertEq(fundMe.getOwner(), msg.sender);
     }
 
     // Checks price feed version
