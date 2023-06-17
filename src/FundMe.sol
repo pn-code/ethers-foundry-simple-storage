@@ -19,7 +19,7 @@ contract FundMe {
 
     // Array of funders
     address[] private s_funders;
-    mapping(address funder => uint256 amountFunded) public addressToAmountFunded;
+    mapping(address funder => uint256 amountFunded) private s_addressToAmountFunded;
 
     // Address of contract's owner
     address private immutable i_owner;
@@ -35,14 +35,14 @@ contract FundMe {
     function fund() public payable {
         require(msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD, "Didn't send enough ETH.");
         s_funders.push(msg.sender);
-        addressToAmountFunded[msg.sender] += msg.value;
+        s_addressToAmountFunded[msg.sender] += msg.value;
     }
 
     // For Loop Implementation
     function withdraw() public onlyOwner {
         for (uint256 funderIndex = 0; funderIndex < s_funders.length; funderIndex++) {
             address funder = s_funders[funderIndex];
-            addressToAmountFunded[funder] = 0;
+            s_addressToAmountFunded[funder] = 0;
         }
 
         // Reset the array
@@ -86,6 +86,10 @@ contract FundMe {
     // fallback()
     fallback() external payable {
         fund();
+    }
+
+    function getAddressToAmountFunded(address fundingAddress) public view returns (uint256) {
+        return s_addressToAmountFunded[fundingAddress];
     }
 
     function getFunder(uint256 index) public view returns (address) {
