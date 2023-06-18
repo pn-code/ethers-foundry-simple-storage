@@ -68,8 +68,7 @@ contract FundMe {
     }
 
     modifier onlyOwner() {
-        // require(msg.sender == i_owner, "Must be owner!");
-        if (msg.sender == i_owner) {
+        if (msg.sender != i_owner) {
             revert FundMe__NotOwner();
         }
         // _; is a placeholder for the code; it can be placed before or after
