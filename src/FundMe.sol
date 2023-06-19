@@ -13,6 +13,7 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/Ag
 // 4. When naming errors, put contract name followed by double underscore then error name
 // 5. Storage var should start with s_
 // 6. Private var are more gas efficient than public ones
+// 7. Read/write from memory is much more efficient than read/write from storage
 
 error FundMe__NotOwner();
 
@@ -60,6 +61,23 @@ contract FundMe {
 
         // bool sendSuccess = payable(msg.sender).send(address(this).balance);
         // require(sendSuccess, "Send failed.");
+
+        (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
+        require(callSuccess, "Call failed.");
+    }
+
+    function cheaperWithdraw() public onlyOwner {
+        // This is cheaper since it reads/write to storage less / uses memory instead
+        uint256 fundersLength = s_funders.length;
+
+        for (uint256 funderIndex = 0; funderIndex < fundersLength; funderIndex++) {
+            // There's no other way around reading from array/mapping
+            address funder = s_funders[funderIndex];
+            s_addressToAmountFunded[funder] = 0;
+        }
+
+        // Reset the array
+        s_funders = new address[](0);
 
         (bool callSuccess,) = payable(msg.sender).call{value: address(this).balance}("");
         require(callSuccess, "Call failed.");
