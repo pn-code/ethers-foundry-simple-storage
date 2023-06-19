@@ -2,7 +2,9 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-remappings = ["@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts", "@forge-std/src/=lib/forge-std/src"]
+remappings = ["@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts", "@forge-std/src/=lib/forge-std/src", "foundry-devops/src/=lib/foundry-devops/src"]
 
+# In most cases, make sure this is off
+ffi = true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
