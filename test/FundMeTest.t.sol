@@ -7,11 +7,13 @@ import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
 contract FundMeTest is Test {
     // Initiate var
-    FundMe fundMe;
+    FundMe public fundMe;
 
-    address USER = makeAddr("user");
-    uint256 constant SEND_VALUE = 0.1 ether;
+    address public constant USER = address(1);
+
+    uint256 constant SEND_AMOUNT = 0.1 ether;
     uint256 constant STARTING_BALANCE = 10 ether;
+    uint256 public constant GAS_PRICE = 1;
 
     // Provide value to var
     function setUp() external {
@@ -30,7 +32,7 @@ contract FundMeTest is Test {
         // Because we asked FundMeTest to deploy FundMe contract, FundMe is the owner
         // So address(this) should be the owner's address
         // But if tested with vm.startBroadcast deploy script, then owner is msg.sender
-        assertEq(fundMe.i_owner(), msg.sender);
+        assertEq(fundMe.getOwner(), msg.sender);
     }
 
     // Checks price feed version
@@ -38,25 +40,79 @@ contract FundMeTest is Test {
         assertEq(fundMe.getVersion(), 4);
     }
 
-    // Checks to see if fund fails/reverts if not enough ETH
+    // fund function should fail if not enough ETH
     function testFundFailsWithoutEnoughETH() public {
-        vm.expectRevert(); // next line should revert
+        vm.expectRevert();
         fundMe.fund();
     }
 
-    // Fund should work when funded
+    // fund function should pass if enough ETH is passed to it
     function testFundUpdatesFundedDataStructure() public {
         vm.prank(USER);
-        fundMe.fund{value: SEND_VALUE}();
+        fundMe.fund{value: SEND_AMOUNT}();
         uint256 amountFunded = fundMe.getAddressToAmountFunded(USER);
-        assertEq(amountFunded, SEND_VALUE);
+        assertEq(amountFunded, SEND_AMOUNT);
     }
 
-    // Fund function should add funder to arrays of funders
     function testAddsFunderToArrayOfFunders() public {
         vm.prank(USER);
-        fundMe.fund{value: SEND_VALUE}();
+        fundMe.fund{value: SEND_AMOUNT}();
+
         address funder = fundMe.getFunder(0);
-        assertEq(USER, funder);
+        assertEq(funder, USER);
+    }
+
+    modifier funded() {
+        vm.prank(USER);
+        fundMe.fund{value: SEND_AMOUNT}();
+        assert(address(fundMe).balance > 0);
+        _;
+    }
+
+    function testOnlyOwnerCanWithdraw() public funded {
+        vm.expectRevert();
+        fundMe.withdraw();
+    }
+
+    function testWithdrawWithASingleFunder() public funded {
+        // Arrange
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        vm.prank(fundMe.getOwner());
+        fundMe.withdraw();
+
+        // Assert
+        uint256 endingOwnerBalance = fundMe.getOwner().balance;
+        uint256 endingFundMeBalance = address(fundMe).balance;
+
+        assertEq(endingFundMeBalance, 0);
+        assertEq(startingFundMeBalance + startingOwnerBalance, endingOwnerBalance);
+    }
+
+    function testWithdrawFromMultipleFunders() public funded {
+        // Arrange
+        uint160 numberOfFunders = 10;
+        uint160 startingFunderIndex = 2;
+
+        for (uint160 i = startingFunderIndex; i < numberOfFunders; i++) {
+            // Hoax = vm.prank & vm.deal
+            hoax(address(i), SEND_AMOUNT);
+            fundMe.fund{value: SEND_AMOUNT}();
+        }
+
+        uint256 startingOwnerBalance = fundMe.getOwner().balance;
+        uint256 startingFundMeBalance = address(fundMe).balance;
+
+        // Act
+        vm.startPrank(fundMe.getOwner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        // Assert
+        uint256 endingOwnerBalance = address(fundMe.getOwner()).balance;
+        assertEq(address(fundMe).balance, 0);
+        assertEq(startingFundMeBalance + startingOwnerBalance, endingOwnerBalance);
     }
 }
